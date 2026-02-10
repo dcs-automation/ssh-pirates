@@ -1,4 +1,4 @@
-# Mission: Secret Server Explorer
+# Mission: SSH Pirates
 
 ### Goal
 
