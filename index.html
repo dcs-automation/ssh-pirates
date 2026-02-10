@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission: Secret Server Explorer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Inter:wght@400;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0e17;
+    --panel: #111827;
+    --border: #1e3a5f;
+    --accent: #00e5ff;
+    --accent-dim: #00e5ff44;
+    --green: #39ff14;
+    --green-dim: #39ff1433;
+    --orange: #ff9f1c;
+    --orange-dim: #ff9f1c33;
+    --red: #ff3b5c;
+    --text: #c9d6e3;
+    --text-bright: #eaf1f8;
+    --gold: #ffd700;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Starfield background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.6), transparent),
+      radial-gradient(1px 1px at 30% 70%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(1.5px 1.5px at 50% 10%, rgba(255,255,255,0.7), transparent),
+      radial-gradient(1px 1px at 70% 40%, rgba(255,255,255,0.5), transparent),
+      radial-gradient(1px 1px at 90% 80%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(1.5px 1.5px at 15% 55%, rgba(255,255,255,0.6), transparent),
+      radial-gradient(1px 1px at 85% 15%, rgba(255,255,255,0.5), transparent),
+      radial-gradient(1px 1px at 45% 90%, rgba(255,255,255,0.3), transparent),
+      radial-gradient(1.5px 1.5px at 60% 60%, rgba(255,255,255,0.5), transparent),
+      radial-gradient(1px 1px at 25% 35%, rgba(255,255,255,0.4), transparent);
+    background-size: 200px 200px, 300px 300px, 250px 250px, 180px 180px, 320px 320px,
+                     270px 270px, 220px 220px, 350px 350px, 290px 290px, 240px 240px;
+    z-index: 0;
+    pointer-events: none;
+    animation: drift 60s linear infinite;
+  }
+
+  @keyframes drift {
+    to { transform: translateY(-200px); }
+  }
+
+  .container {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 24px 20px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .mission-header {
+    text-align: center;
+    padding: 48px 24px 36px;
+    margin-bottom: 32px;
+    position: relative;
+  }
+
+  .classification {
+    display: inline-block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--orange);
+    border: 1px solid var(--orange);
+    padding: 4px 16px;
+    margin-bottom: 20px;
+    animation: blink-border 2s infinite;
+  }
+
+  @keyframes blink-border {
+    0%, 100% { border-color: var(--orange); }
+    50% { border-color: transparent; }
+  }
+
+  .mission-header h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(1.8rem, 5vw, 2.8rem);
+    font-weight: 900;
+    color: var(--accent);
+    text-shadow: 0 0 30px var(--accent-dim), 0 0 60px rgba(0,229,255,0.15);
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+
+  .mission-header .subtitle {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    color: var(--text);
+    opacity: 0.7;
+  }
+
+  /* Story prompt */
+  .story-box {
+    background: linear-gradient(135deg, #111827 0%, #0f1b2d 100%);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 28px 28px 28px 24px;
+    margin-bottom: 36px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .story-box::before {
+    content: 'INCOMING TRANSMISSION';
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--green);
+    background: var(--green-dim);
+    padding: 4px 12px;
+    border-radius: 0 8px 0 6px;
+  }
+
+  .story-box p {
+    font-size: 17px;
+    line-height: 1.8;
+    color: var(--text-bright);
+    font-style: italic;
+  }
+
+  /* Progress tracker */
+  .progress-bar {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 24px;
+    margin-bottom: 36px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .progress-bar .label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .progress-track {
+    flex: 1;
+    height: 8px;
+    background: #1a2332;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--green));
+    border-radius: 4px;
+    transition: width 0.6s ease;
+    box-shadow: 0 0 10px var(--accent-dim);
+  }
+
+  .progress-text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  /* Step cards */
+  .step-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .step-card.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px var(--accent-dim);
+  }
+
+  .step-card.completed {
+    border-color: var(--green);
+    box-shadow: 0 0 15px var(--green-dim);
+  }
+
+  .step-card.locked {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+  }
+
+  .step-header:hover {
+    background: rgba(255,255,255,0.02);
+  }
+
+  .step-number {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    color: var(--text);
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+
+  .step-card.active .step-number {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 12px var(--accent-dim);
+  }
+
+  .step-card.completed .step-number {
+    border-color: var(--green);
+    background: var(--green);
+    color: var(--bg);
+  }
+
+  .step-title {
+    flex: 1;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text-bright);
+  }
+
+  .step-card.completed .step-title {
+    color: var(--green);
+  }
+
+  .step-status {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .step-card.locked .step-status {
+    color: var(--text);
+    background: rgba(255,255,255,0.05);
+  }
+
+  .step-card.active .step-status {
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .step-card.completed .step-status {
+    color: var(--green);
+    background: var(--green-dim);
+  }
+
+  .step-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+  }
+
+  .step-body.open {
+    max-height: 1200px;
+  }
+
+  .step-content {
+    padding: 0 22px 22px;
+  }
+
+  .step-content p, .step-content li {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .step-content ul, .step-content ol {
+    padding-left: 20px;
+    margin-bottom: 14px;
+  }
+
+  .step-content strong {
+    color: var(--text-bright);
+  }
+
+  /* Info callouts */
+  .info-box {
+    background: rgba(0,229,255,0.06);
+    border: 1px solid rgba(0,229,255,0.2);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 14px 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--accent);
+  }
+
+  .info-box .info-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 6px;
+    opacity: 0.7;
+  }
+
+  /* Terminal/code blocks */
+  .terminal {
+    background: #0d1117;
+    border: 1px solid #21262d;
+    border-radius: 8px;
+    margin: 14px 0;
+    overflow: hidden;
+  }
+
+  .terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: #161b22;
+    border-bottom: 1px solid #21262d;
+  }
+
+  .terminal-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+  .terminal-dot.r { background: #ff5f57; }
+  .terminal-dot.y { background: #febc2e; }
+  .terminal-dot.g { background: #28c840; }
+
+  .terminal-bar span {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: #666;
+    margin-left: 8px;
+  }
+
+  .terminal-body {
+    padding: 16px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--green);
+    position: relative;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .terminal-body .prompt {
+    color: var(--accent);
+    user-select: none;
+  }
+
+  .terminal-body .cmd {
+    color: #e6edf3;
+  }
+
+  /* Copy button */
+  .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .copy-btn:hover { background: rgba(255,255,255,0.14); }
+  .copy-btn.copied { color: var(--green); border-color: var(--green); }
+
+  /* Explanation blocks */
+  .explain {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+    align-items: flex-start;
+  }
+
+  .explain code {
+    font-family: 'Share Tech Mono', monospace;
+    background: rgba(0,229,255,0.1);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .explain span {
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  /* Complete button */
+  .complete-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 10px 22px;
+    background: transparent;
+    border: 1px solid var(--green);
+    border-radius: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: var(--green);
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+
+  .complete-btn:hover {
+    background: var(--green);
+    color: var(--bg);
+    box-shadow: 0 0 20px var(--green-dim);
+  }
+
+  /* Bonus section */
+  .bonus-section {
+    margin-top: 40px;
+  }
+
+  .bonus-title {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--orange);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .bonus-card {
+    background: var(--panel);
+    border: 1px dashed var(--orange);
+    border-radius: 10px;
+    padding: 22px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+
+  .bonus-card.unlocked {
+    opacity: 1;
+    pointer-events: auto;
+    border-style: solid;
+    box-shadow: 0 0 15px var(--orange-dim);
+  }
+
+  .bonus-card h3 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    color: var(--orange);
+    margin-bottom: 12px;
+  }
+
+  /* Secret word input area */
+  .secret-input-area {
+    margin-top: 18px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .secret-input {
+    flex: 1;
+    min-width: 180px;
+    padding: 10px 14px;
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 15px;
+    color: var(--gold);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+
+  .secret-input:focus { border-color: var(--accent); }
+
+  .secret-submit {
+    padding: 10px 20px;
+    background: var(--accent);
+    border: none;
+    border-radius: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: var(--bg);
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.25s;
+  }
+  .secret-submit:hover { box-shadow: 0 0 20px var(--accent-dim); }
+
+  /* Victory overlay */
+  .victory-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,14,23,0.92);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .victory-overlay.show { display: flex; }
+
+  .victory-box {
+    background: var(--panel);
+    border: 2px solid var(--gold);
+    border-radius: 16px;
+    padding: 48px 40px;
+    text-align: center;
+    max-width: 480px;
+    box-shadow: 0 0 60px rgba(255,215,0,0.15);
+    animation: pop-in 0.4s ease;
+  }
+
+  @keyframes pop-in {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .victory-box .trophy { font-size: 64px; margin-bottom: 16px; }
+
+  .victory-box h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 26px;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+
+  .victory-box p {
+    font-size: 16px;
+    color: var(--text);
+    line-height: 1.7;
+    margin-bottom: 8px;
+  }
+
+  .victory-box .rank {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    margin-top: 16px;
+  }
+
+  .victory-close {
+    margin-top: 24px;
+    padding: 10px 28px;
+    background: var(--gold);
+    border: none;
+    border-radius: 6px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--bg);
+    cursor: pointer;
+  }
+
+  /* Typing animation for story */
+  .typewriter { overflow: hidden; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .container { padding: 16px 12px 60px; }
+    .step-header { padding: 14px 16px; }
+    .step-content { padding: 0 16px 18px; }
+    .progress-bar { flex-wrap: wrap; gap: 10px; }
+    .secret-input-area { flex-direction: column; }
+    .secret-submit { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="mission-header">
+    <div class="classification">Classified Mission Briefing</div>
+    <h1>Secret Server Explorer</h1>
+    <div class="subtitle">Agent Training Protocol v1.0</div>
+  </div>
+
+  <!-- Story -->
+  <div class="story-box">
+    <p id="story-text"></p>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-bar">
+    <div class="label">Mission Progress</div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-text" id="progressText">0 / 4</div>
+  </div>
+
+  <!-- Step 1 -->
+  <div class="step-card active" id="step1" data-step="1">
+    <div class="step-header" onclick="toggleStep(1)">
+      <div class="step-number">1</div>
+      <div class="step-title">Open the Terminal</div>
+      <div class="step-status">current</div>
+    </div>
+    <div class="step-body open">
+      <div class="step-content">
+        <p>The terminal is how we talk to computers using <strong>words</strong> instead of clicks. Let's open it.</p>
+        <ol>
+          <li>Press the <strong>Windows key</strong> on your keyboard</li>
+          <li>Type <strong>PowerShell</strong></li>
+          <li>Press <strong>Enter</strong></li>
+        </ol>
+        <div class="info-box">
+          <span class="info-label">What is this?</span>
+          A terminal is a window where you type exact instructions for the computer to follow. It's like texting the computer!
+        </div>
+        <p>You should see a dark window with blinking text. That means you're ready.</p>
+        <button class="complete-btn" onclick="completeStep(1)">&#10003; I opened PowerShell</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step-card locked" id="step2" data-step="2">
+    <div class="step-header" onclick="toggleStep(2)">
+      <div class="step-number">2</div>
+      <div class="step-title">Connect to the Server</div>
+      <div class="step-status">locked</div>
+    </div>
+    <div class="step-body">
+      <div class="step-content">
+        <p>Now we'll connect to the remote computer. Type this command <strong>exactly</strong>:</p>
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="terminal-dot r"></div>
+            <div class="terminal-dot y"></div>
+            <div class="terminal-dot g"></div>
+            <span>PowerShell</span>
+          </div>
+          <div class="terminal-body">
+            <button class="copy-btn" onclick="copyCmd(this, 'ssh explorer@10.10.10.5')">copy</button>
+<span class="prompt">PS&gt; </span><span class="cmd">ssh explorer@10.10.10.5</span></div>
+        </div>
+        <p>Then press <strong>Enter</strong> and type your password when asked.</p>
+
+        <div style="margin-top:14px">
+          <p><strong>What does each part mean?</strong></p>
+          <div class="explain"><code>ssh</code> <span>= Secure connection (like a secret tunnel)</span></div>
+          <div class="explain"><code>explorer</code> <span>= Your name on the server</span></div>
+          <div class="explain"><code>10.10.10.5</code> <span>= The address where the computer lives</span></div>
+        </div>
+
+        <div class="info-box">
+          <span class="info-label">About the password</span>
+          When you type your password, you won't see any letters appear. That's normal! The computer is hiding them to keep you safe. Type carefully and press Enter.
+        </div>
+
+        <button class="complete-btn" onclick="completeStep(2)">&#10003; I'm connected!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step-card locked" id="step3" data-step="3">
+    <div class="step-header" onclick="toggleStep(3)">
+      <div class="step-number">3</div>
+      <div class="step-title">Find the Secret</div>
+      <div class="step-status">locked</div>
+    </div>
+    <div class="step-body">
+      <div class="step-content">
+        <p>You're inside the server now. Let's look around and find the secret file.</p>
+
+        <p><strong>First, see what files are here:</strong></p>
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="terminal-dot r"></div>
+            <div class="terminal-dot y"></div>
+            <div class="terminal-dot g"></div>
+            <span>Remote Server</span>
+          </div>
+          <div class="terminal-body">
+            <button class="copy-btn" onclick="copyCmd(this, 'ls')">copy</button>
+<span class="prompt">explorer@server:~$ </span><span class="cmd">ls</span></div>
+        </div>
+        <div class="explain"><code>ls</code> <span>= "List what's here" &mdash; shows all files in the room you're in</span></div>
+
+        <p>You should see a file called <strong>secret.txt</strong>. Now let's read it:</p>
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="terminal-dot r"></div>
+            <div class="terminal-dot y"></div>
+            <div class="terminal-dot g"></div>
+            <span>Remote Server</span>
+          </div>
+          <div class="terminal-body">
+            <button class="copy-btn" onclick="copyCmd(this, 'cat secret.txt')">copy</button>
+<span class="prompt">explorer@server:~$ </span><span class="cmd">cat secret.txt</span></div>
+        </div>
+        <div class="explain"><code>cat</code> <span>= "Show me what's inside" &mdash; displays the contents of a file</span></div>
+
+        <div class="info-box">
+          <span class="info-label">Tip</span>
+          If you see an error, read it carefully! Errors are clues, not failures. Check your spelling and try again.
+        </div>
+
+        <button class="complete-btn" onclick="completeStep(3)">&#10003; I found the secret!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="step-card locked" id="step4" data-step="4">
+    <div class="step-header" onclick="toggleStep(4)">
+      <div class="step-number">4</div>
+      <div class="step-title">Report the Secret Word</div>
+      <div class="step-status">locked</div>
+    </div>
+    <div class="step-body">
+      <div class="step-content">
+        <p>You read the secret message. Now type the <strong>secret prize</strong> below to complete the mission:</p>
+        <div class="secret-input-area">
+          <input type="text" class="secret-input" id="secretInput" placeholder="TYPE SECRET WORD" autocomplete="off" spellcheck="false">
+          <button class="secret-submit" onclick="submitSecret()">TRANSMIT</button>
+        </div>
+        <p id="secretHint" style="margin-top: 10px; font-size: 13px; color: var(--red); display: none;"></p>
+
+        <div style="margin-top: 20px">
+          <p>Before you go, <strong>exit the server safely</strong>:</p>
+          <div class="terminal">
+            <div class="terminal-bar">
+              <div class="terminal-dot r"></div>
+              <div class="terminal-dot y"></div>
+              <div class="terminal-dot g"></div>
+              <span>Remote Server</span>
+            </div>
+            <div class="terminal-body">
+              <button class="copy-btn" onclick="copyCmd(this, 'exit')">copy</button>
+<span class="prompt">explorer@server:~$ </span><span class="cmd">exit</span></div>
+          </div>
+          <div class="info-box">
+            <span class="info-label">Important rule</span>
+            Always leave a computer the same way you entered it. The <code style="background:rgba(0,229,255,0.1);color:var(--accent);padding:2px 6px;border-radius:3px;">exit</code> command closes the secure tunnel.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bonus Challenges -->
+  <div class="bonus-section">
+    <div class="bonus-title">Bonus Missions</div>
+
+    <div class="bonus-card" id="bonus1">
+      <h3>Level 2 &mdash; Navigation</h3>
+      <p style="font-size:14px; color:var(--text); margin-bottom:14px;">Try these commands while connected to the server:</p>
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot r"></div><div class="terminal-dot y"></div><div class="terminal-dot g"></div>
+          <span>Remote Server</span>
+        </div>
+        <div class="terminal-body"><span class="prompt">explorer@server:~$ </span><span class="cmd">pwd</span>
+<span style="color:var(--text)">/home/explorer</span>
+
+<span class="prompt">explorer@server:~$ </span><span class="cmd">whoami</span>
+<span style="color:var(--text)">explorer</span></div>
+      </div>
+      <div class="explain"><code>pwd</code> <span>= "What room am I in?" &mdash; shows your location</span></div>
+      <div class="explain"><code>whoami</code> <span>= "Who am I on this computer?" &mdash; shows your username</span></div>
+    </div>
+
+    <div class="bonus-card" id="bonus2">
+      <h3>Level 3 &mdash; Exit Safely</h3>
+      <p style="font-size:14px; color:var(--text); margin-bottom:10px;">Once you've finished all your exploration, always remember to close the connection:</p>
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot r"></div><div class="terminal-dot y"></div><div class="terminal-dot g"></div>
+          <span>Remote Server</span>
+        </div>
+        <div class="terminal-body"><span class="prompt">explorer@server:~$ </span><span class="cmd">exit</span>
+<span style="color:var(--text)">Connection to 10.10.10.5 closed.</span></div>
+      </div>
+      <p style="font-size:14px; color:var(--text); margin-top:10px;">A good explorer always leaves things the way they found them.</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Victory overlay -->
+<div class="victory-overlay" id="victoryOverlay">
+  <div class="victory-box">
+    <div class="trophy">&#127942;</div>
+    <h2>Mission Complete!</h2>
+    <p>You connected to a remote server, explored the file system, and recovered the secret prize.</p>
+    <p style="color: var(--gold); font-weight: 600;">You are now a certified Server Explorer.</p>
+    <div class="rank">RANK: JUNIOR SYSTEMS OPERATOR</div>
+    <button class="victory-close" onclick="closeVictory()">ACCEPT RANK</button>
+  </div>
+</div>
+
+<script>
+  // State
+  const TOTAL_STEPS = 4;
+  const SECRET_WORD = '$5';
+  let completedSteps = new Set();
+
+  // Typewriter effect for story
+  const storyLines = [
+    'A computer far away holds a secret word.',
+    'You must connect to it safely and read the message.',
+    'The server only listens to exact instructions.'
+  ];
+
+  (function typeStory() {
+    const el = document.getElementById('story-text');
+    const fullText = storyLines.join('\n');
+    let i = 0;
+    function tick() {
+      if (i <= fullText.length) {
+        el.innerHTML = fullText.slice(0, i).replace(/\n/g, '<br>');
+        i++;
+        setTimeout(tick, 28);
+      }
+    }
+    tick();
+  })();
+
+  // Toggle step body
+  function toggleStep(n) {
+    const card = document.getElementById('step' + n);
+    if (card.classList.contains('locked')) return;
+    const body = card.querySelector('.step-body');
+    body.classList.toggle('open');
+  }
+
+  // Complete a step
+  function completeStep(n) {
+    if (completedSteps.has(n)) return;
+    completedSteps.add(n);
+
+    const card = document.getElementById('step' + n);
+    card.classList.remove('active');
+    card.classList.add('completed');
+    card.querySelector('.step-status').textContent = 'complete';
+    card.querySelector('.step-number').textContent = '\u2713';
+
+    // Close this step body
+    card.querySelector('.step-body').classList.remove('open');
+
+    // Unlock next step
+    const next = n + 1;
+    if (next <= TOTAL_STEPS) {
+      const nextCard = document.getElementById('step' + next);
+      nextCard.classList.remove('locked');
+      nextCard.classList.add('active');
+      nextCard.querySelector('.step-status').textContent = 'current';
+      // Open it
+      nextCard.querySelector('.step-body').classList.add('open');
+      // Scroll to it
+      setTimeout(() => {
+        nextCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+    }
+
+    updateProgress();
+
+    // Unlock bonus missions when all 4 steps done
+    if (completedSteps.size >= TOTAL_STEPS) {
+      document.getElementById('bonus1').classList.add('unlocked');
+      document.getElementById('bonus2').classList.add('unlocked');
+    }
+  }
+
+  // Update progress bar
+  function updateProgress() {
+    const pct = (completedSteps.size / TOTAL_STEPS) * 100;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressText').textContent = completedSteps.size + ' / ' + TOTAL_STEPS;
+  }
+
+  // Submit secret word
+  function submitSecret() {
+    const input = document.getElementById('secretInput');
+    const hint = document.getElementById('secretHint');
+    const val = input.value.trim().toUpperCase();
+
+    if (!val) {
+      hint.textContent = 'Type the secret prize you found in the file.';
+      hint.style.display = 'block';
+      return;
+    }
+
+    if (val === SECRET_WORD) {
+      completeStep(4);
+      setTimeout(() => {
+        document.getElementById('victoryOverlay').classList.add('show');
+      }, 600);
+    } else {
+      hint.textContent = 'That\'s not quite right. Read the secret.txt file again carefully!';
+      hint.style.display = 'block';
+      input.style.borderColor = 'var(--red)';
+      setTimeout(() => { input.style.borderColor = 'var(--border)'; }, 1500);
+    }
+  }
+
+  // Enter key for secret input
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('secretInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') submitSecret();
+    });
+  });
+
+  // Close victory
+  function closeVictory() {
+    document.getElementById('victoryOverlay').classList.remove('show');
+  }
+
+  // Copy command
+  function copyCmd(btn, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'copy';
+        btn.classList.remove('copied');
+      }, 1500);
+    });
+  }
+</script>
+
+</body>
+</html>
